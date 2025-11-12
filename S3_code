@@ -1,0 +1,36 @@
+The Code for S3
+import json
+import boto3
+
+s3_client = boto3.client('s3')
+dynamodb = boto3.resource("dynamodb")
+table = dynamodb.Table('table_lambda')
+
+def lambda_handler(event, context):
+    try:
+            
+        bucket_name = event["Records"][0]["s3"]["bucket"]["name"]
+        s3_file_name = event["Records"][0]["s3"]["object"]["key"]
+        
+        response = s3_client.get_object(Bucket=bucket_name, Key=s3_file_name)
+        data = response["Body"].read().decode('utf-8')
+        employees = data.split("\n")
+        for emp in employees:
+            try:
+                emp = emp.split(",")
+                table.put_item(
+                    Item = {
+                        "id": str(emp[0]),
+                        "Name": str(emp[1]),
+                        "City": str(emp[2])
+                    }
+                    )
+            except:
+                continue
+    except Exception as err:
+        print (err)
+        
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }
